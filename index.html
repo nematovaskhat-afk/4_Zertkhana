@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заттардың ерігіштігі симуляциясы</title>
+    <!-- Tailwind CSS-ті қосу -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Интер шрифтін және негізгі стильдерді қосу */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Стақанның негізгі стилі */
+        .beaker {
+            width: 150px;
+            height: 220px;
+            border: 5px solid #6B7280; /* Сұр шекара */
+            border-top: none; /* Жоғарғы шекараны алып тастау */
+            border-radius: 0 0 20px 20px; /* Төменгі бұрыштарды дөңгелектеу */
+            position: relative;
+            background-color: #F3F4F6; /* Ашық сұр фон */
+            overflow: hidden; /* Ішіндегі мазмұнды жасыру */
+            margin: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Стақандағы су */
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0; /* Бастапқыда биіктігі 0 */
+            background-color: #93C5FD; /* Ашық көк */
+            opacity: 0.7;
+            transition: height 1.5s ease-in-out; /* Биіктік анимациясы */
+        }
+
+        /* Еритін зат (қатты) */
+        .solid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30%; /* Заттың бастапқы мөлшері */
+            transition: all 1.5s ease-in-out; /* Анимация */
+            z-index: 10;
+        }
+        
+        /* Әр заттың түсі */
+        /* Еритіндер (Ақ) */
+        #solid-nacl { background-color: #FFFFFF; border-top: 2px solid #D1D5DB; } 
+        #solid-mgcl2 { background-color: #FAFAFA; border-top: 2px solid #D1D5DB; } 
+
+        /* Аз еритіндер (Ақшыл) */
+        #solid-caso4 { background-color: #FEF3C7; border-top: 2px solid #FDE68A; } 
+        #solid-mgoh2 { background-color: #F9FAFB; border-top: 2px solid #E5E7EB; }
+
+        /* Ерімейтіндер (Сұр/Түсті) */
+        #solid-caco3 { background-color: #E5E7EB; border-top: 2px solid #9CA3AF; } 
+        #solid-znoh2 { background-color: #E0E7FF; border-top: 2px solid #C7D2FE; } /* Ақшыл көкшіл */
+        
+        
+        /* Нәтиже мәтіні */
+        .result-text {
+            height: 40px; /* Тұрақты биіктік */
+            opacity: 0;
+            transition: opacity 1s ease-in-out 1.5s; /* Анимациядан кейін пайда болады */
+        }
+    </style>
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="container mx-auto max-w-7xl bg-white p-6 rounded-2xl shadow-xl">
+        
+        <!-- Тақырып -->
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">
+            Заттардың ерігіштігін зерттеу
+        </h1>
+        <p class="text-center text-gray-600 mb-8">
+            Әрбір затқа 20мл су қосқанда не болатынын бақылаңыз.
+        </p>
+
+        <!-- Басқару түймелері -->
+        <div class="flex justify-center space-x-4 mb-8 flex-wrap">
+            <button id="add-water-all" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-300">
+                Барлығына су құю (20мл)
+            </button>
+            <button id="reset" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-300">
+                Бастапқы күй
+            </button>
+        </div>
+
+        <!-- Симуляция аймағы (Стақандар) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
+
+            <!-- 1. Натрий хлориді (NaCl) - Ериді -->
+            <div class="flex flex-col items-center p-4">
+                <h2 class="text-xl font-semibold mb-2">Натрий хлориді (NaCl)</h2>
+                <div class="beaker">
+                    <div id="water-nacl" class="water"></div>
+                    <div id="solid-nacl" class="solid"></div>
+                </div>
+                <p id="result-nacl" class="result-text text-center font-medium text-green-600 mt-2">
+                    Зат толығымен еріді.
+                </p>
+            </div>
+
+            <!-- 2. Магний хлориді (MgCl2) - Ериді -->
+            <div class="flex flex-col items-center p-4">
+                <h2 class="text-xl font-semibold mb-2">Магний хлориді (MgCl₂)</h2>
+                <div class="beaker">
+                    <div id="water-mgcl2" class="water"></div>
+                    <div id="solid-mgcl2" class="solid"></div>
+                </div>
+                <p id="result-mgcl2" class="result-text text-center font-medium text-green-600 mt-2">
+                    Зат толығымен еріді.
+                </p>
+            </div>
+
+            <!-- 3. Кальций сульфаты (CaSO4) - Аз ериді -->
+            <div class="flex flex-col items-center p-4">
+                <h2 class="text-xl font-semibold mb-2">Кальций сульфаты (CaSO₄)</h2>
+                <div class="beaker">
+                    <div id="water-caso4" class="water"></div>
+                    <div id="solid-caso4" class="solid"></div>
+                </div>
+                <p id="result-caso4" class="result-text text-center font-medium text-yellow-600 mt-2">
+                    Зат аз мөлшерде еріді.
+                </p>
+            </div>
+
+            <!-- 4. Магний гидроксиді (Mg(OH)2) - Аз ериді -->
+            <div class="flex flex-col items-center p-4">
+                <h2 class="text-xl font-semibold mb-2">Магний гидроксиді (Mg(OH)₂)</h2>
+                <div class="beaker">
+                    <div id="water-mgoh2" class="water"></div>
+                    <div id="solid-mgoh2" class="solid"></div>
+                </div>
+                <p id="result-mgoh2" class="result-text text-center font-medium text-yellow-600 mt-2">
+                    Зат аз мөлшерде еріді.
+                </p>
+            </div>
+
+            <!-- 5. Кальций карбонаты (CaCO3) - Ерімейді -->
+            <div class="flex flex-col items-center p-4">
+                <h2 class="text-xl font-semibold mb-2">Кальций карбонаты (CaCO₃)</h2>
+                <div class="beaker">
+                    <div id="water-caco3" class="water"></div>
+                    <div id="solid-caco3" class="solid"></div>
+                </div>
+                <p id="result-caco3" class="result-text text-center font-medium text-red-600 mt-2">
+                    Зат мүлдем ерімеді.
+                </p>
+            </div>
+
+            <!-- 6. Мырыш гидроксиді (Zn(OH)2) - Ерімейді -->
+            <div class="flex flex-col items-center p-4">
+                <h2 class="text-xl font-semibold mb-2">Мырыш гидроксиді (Zn(OH)₂)</h2>
+                <div class="beaker">
+                    <div id="water-znoh2" class="water"></div>
+                    <div id="solid-znoh2" class="solid"></div>
+                </div>
+                <p id="result-znoh2" class="result-text text-center font-medium text-red-600 mt-2">
+                    Зат мүлдем ерімеді.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Элементтерді алу
+            const btnAddWater = document.getElementById('add-water-all');
+            const btnReset = document.getElementById('reset');
+
+            // 1-ші қатар (Еритіндер)
+            const waterNacl = document.getElementById('water-nacl');
+            const solidNacl = document.getElementById('solid-nacl');
+            const resultNacl = document.getElementById('result-nacl');
+
+            const waterMgcl2 = document.getElementById('water-mgcl2');
+            const solidMgcl2 = document.getElementById('solid-mgcl2');
+            const resultMgcl2 = document.getElementById('result-mgcl2');
+
+            // 2-ші қатар (Аз еритіндер)
+            const waterCaso4 = document.getElementById('water-caso4');
+            const solidCaso4 = document.getElementById('solid-caso4');
+            const resultCaso4 = document.getElementById('result-caso4');
+
+            const waterMgoh2 = document.getElementById('water-mgoh2');
+            const solidMgoh2 = document.getElementById('solid-mgoh2');
+            const resultMgoh2 = document.getElementById('result-mgoh2');
+
+            // 3-ші қатар (Ерімейтіндер)
+            const waterCaco3 = document.getElementById('water-caco3');
+            const solidCaco3 = document.getElementById('solid-caco3');
+            const resultCaco3 = document.getElementById('result-caco3');
+
+            const waterZnoh2 = document.getElementById('water-znoh2');
+            const solidZnoh2 = document.getElementById('solid-znoh2');
+            const resultZnoh2 = document.getElementById('result-znoh2');
+
+            // Су құю функциясы
+            function addWater() {
+                // 1. NaCl - толық ериді
+                waterNacl.style.height = '70%'; 
+                solidNacl.style.height = '0'; 
+                solidNacl.style.opacity = '0';
+                resultNacl.style.opacity = '1';
+
+                // 2. MgCl2 - толық ериді
+                waterMgcl2.style.height = '70%'; 
+                solidMgcl2.style.height = '0'; 
+                solidMgcl2.style.opacity = '0';
+                resultMgcl2.style.opacity = '1';
+
+                // 3. CaSO4 - аз ериді
+                waterCaso4.style.height = '70%'; 
+                solidCaso4.style.height = '20%'; // Аз бөлігі қалады
+                resultCaso4.style.opacity = '1';
+
+                // 4. Mg(OH)2 - аз ериді
+                waterMgoh2.style.height = '70%'; 
+                solidMgoh2.style.height = '20%'; // Аз бөлігі қалады
+                resultMgoh2.style.opacity = '1';
+
+                // 5. CaCO3 - ерімейді
+                waterCaco3.style.height = '70%'; 
+                solidCaco3.style.height = '30%'; // Сол күйінде қалады
+                resultCaco3.style.opacity = '1';
+
+                // 6. Zn(OH)2 - ерімейді
+                waterZnoh2.style.height = '70%'; 
+                solidZnoh2.style.height = '30%'; // Сол күйінде қалады
+                resultZnoh2.style.opacity = '1';
+                
+                // Түймелерді өшіру
+                btnAddWater.disabled = true;
+                btnAddWater.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Бастапқы күйге келтіру функциясы
+            function resetSimulation() {
+                // Суды босату
+                waterNacl.style.height = '0';
+                waterMgcl2.style.height = '0';
+                waterCaso4.style.height = '0';
+                waterMgoh2.style.height = '0';
+                waterCaco3.style.height = '0';
+                waterZnoh2.style.height = '0';
+                
+                // Заттарды қалпына келтіру
+                solidNacl.style.height = '30%';
+                solidNacl.style.opacity = '1';
+                solidMgcl2.style.height = '30%';
+                solidMgcl2.style.opacity = '1';
+                solidCaso4.style.height = '30%';
+                solidCaso4.style.opacity = '1';
+                solidMgoh2.style.height = '30%';
+                solidMgoh2.style.opacity = '1';
+                solidCaco3.style.height = '30%';
+                solidCaco3.style.opacity = '1';
+                solidZnoh2.style.height = '30%';
+                solidZnoh2.style.opacity = '1';
+
+                // Нәтижелерді жасыру
+                resultNacl.style.opacity = '0';
+                resultMgcl2.style.opacity = '0';
+                resultCaso4.style.opacity = '0';
+                resultMgoh2.style.opacity = '0';
+                resultCaco3.style.opacity = '0';
+                resultZnoh2.style.opacity = '0';
+                
+                // Түймені қайта қосу
+                btnAddWater.disabled = false;
+                btnAddWater.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Түймелерге оқиғаларды қосу
+            btnAddWater.addEventListener('click', addWater);
+            btnReset.addEventListener('click', resetSimulation);
+        });
+    </script>
+
+</body>
+</html>
